@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>都道府県マスター Ver.4</title>
+<title>都道府県マスター Ver.5</title>
 <style>
 :root {
   --main:#08a6a0; --main2:#6ed2cf; --bg:#eefafa; --card:#ffffff;
@@ -47,6 +47,9 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
 .progressText { font-size:13px; color:var(--muted); margin-bottom:5px; }
 .progressBar { height:12px; background:#e4f3f3; border-radius:99px; overflow:hidden; }
 #progressFill { height:100%; width:0%; background:linear-gradient(90deg,#08a6a0,#86efac); transition:width .25s; }
+.medalRow { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.medal { display:inline-block; padding:6px 10px; border-radius:999px; background:#f1f5f9; color:#64748b; font-weight:900; font-size:13px; }
+.medal.on { background:#fff3c4; color:#7a4f00; }
 .mapCard { position:relative; overflow:hidden; }
 #map {
   width:100%; min-height:560px; display:flex; align-items:center; justify-content:center;
@@ -63,7 +66,7 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
 .geolonia-svg-map .prefecture.wrong { fill:#fca5a5 !important; }
 .geolonia-svg-map .prefecture.learn { fill:#fef3c7 !important; }
 .resultPanel {
-  position:absolute; right:26px; bottom:28px; width:min(330px, calc(100% - 52px));
+  position:absolute; right:26px; bottom:28px; width:min(340px, calc(100% - 52px));
   background:white; border-radius:22px; box-shadow:0 8px 28px rgba(0,0,0,.18);
   border:1px solid #d9eeee; padding:18px; text-align:center; display:none;
 }
@@ -75,6 +78,7 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
 .dot.ok { background:#86efac; } .dot.ng { background:#fca5a5; } .dot.learn { background:#fef3c7; border:1px solid #d6a900; }
 .list { display:grid; grid-template-columns:repeat(auto-fill,minmax(135px,1fr)); gap:8px; }
 .chip { padding:9px 10px; background:#f5fbfb; border:1px solid #e0eeee; border-radius:13px; font-size:14px; }
+.weakChip { background:#fff7ed; border-color:#fed7aa; }
 .small { color:var(--muted); font-size:13px; line-height:1.6; }
 .loading { font-weight:900; color:var(--muted); padding:20px; }
 .modal {
@@ -83,7 +87,7 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
 }
 .modal.show { display:flex; }
 .modalInner {
-  width:min(520px,100%); background:white; border-radius:26px; padding:26px;
+  width:min(540px,100%); background:white; border-radius:26px; padding:26px;
   text-align:center; box-shadow:0 18px 60px rgba(0,0,0,.3);
 }
 .modalInner h2 { font-size:34px; margin:0 0 10px; }
@@ -96,9 +100,8 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
   position:fixed; width:10px; height:10px; top:-20px; z-index:60; pointer-events:none;
   animation:fall 1.8s linear forwards;
 }
-@keyframes fall {
-  to { transform:translateY(110vh) rotate(720deg); opacity:.9; }
-}
+@keyframes fall { to { transform:translateY(110vh) rotate(720deg); opacity:.9; } }
+.timerBig { font-size:20px; font-weight:900; color:#0f766e; }
 @media(max-width:850px) {
   main { padding:10px; } .topGrid { grid-template-columns:1fr; } .stats { grid-template-columns:repeat(2,1fr); }
   #question { font-size:25px; } #map { min-height:460px; justify-content:flex-start; }
@@ -107,7 +110,7 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
 </style>
 </head>
 <body>
-<header><h1>👑 都道府県マスター Ver.4</h1></header>
+<header><h1>👑 都道府県マスター Ver.5</h1></header>
 <main>
   <section class="card topGrid">
     <div>
@@ -118,17 +121,19 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
         </select>
         <button class="primary" id="startBtn">🎮 クイズ</button>
         <button class="challenge" id="tenBtn">🏅 10問</button>
-        <button class="challenge" id="allBtn">👑 47県制覇</button>
+        <button class="challenge" id="allBtn">👑 47県</button>
+        <button class="challenge" id="timeBtn">⏱ タイム</button>
         <button class="soft" id="learnBtn">📍 学習</button>
         <button class="soft" id="weakBtn">🧠 苦手</button>
         <button class="danger" id="resetBtn">記録リセット</button>
       </div>
       <div id="question">「クイズ」を押してね</div>
-      <div id="message">県の形そのものをクリックできます。</div>
+      <div id="message">Ver.5：タイムアタック・メダル・苦手卒業を追加。</div>
       <div class="progressWrap">
         <div class="progressText" id="progressText">進み具合：未開始</div>
         <div class="progressBar"><div id="progressFill"></div></div>
       </div>
+      <div class="medalRow" id="medalRow"></div>
     </div>
     <div>
       <div class="stats">
@@ -137,12 +142,13 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
         <div class="stat"><b id="rate">0%</b><span>正答率</span></div>
         <div class="stat"><b id="streak">0</b><span>連続正解</span></div>
       </div>
-      <div class="stats" style="grid-template-columns:repeat(3,1fr);">
+      <div class="stats" style="grid-template-columns:repeat(4,1fr);">
         <div class="stat"><b id="weakCount">0</b><span>苦手県</span></div>
         <div class="stat"><b id="best10">-</b><span>10問ベスト</span></div>
         <div class="stat"><b id="best47">-</b><span>47県ベスト</span></div>
+        <div class="stat"><b id="bestTime">-</b><span>最速</span></div>
       </div>
-      <p class="small">10問・47県制覇では終了時に結果が出ます。</p>
+      <p class="small">苦手県は3回連続正解で卒業します。</p>
     </div>
   </section>
 
@@ -151,6 +157,7 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
       <span><i class="dot ok"></i>正解</span>
       <span><i class="dot ng"></i>不正解</span>
       <span><i class="dot learn"></i>学習モードで選択中</span>
+      <span class="timerBig" id="timerText"></span>
     </div>
     <div id="map"><div class="loading">地図を読み込み中...</div></div>
     <div class="resultPanel" id="resultPanel">
@@ -158,6 +165,7 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
       <div id="resultSub">ここは</div>
       <div class="big" id="resultName">愛媛県</div>
       <div id="resultInfo">四国／県庁所在地：松山市</div>
+      <div id="graduateText" class="small"></div>
       <button class="primary" id="nextBtn" style="margin-top:14px;">次の問題へ</button>
     </div>
   </section>
@@ -185,13 +193,16 @@ const MAP_URL = "https://cdn.jsdelivr.net/gh/geolonia/japanese-prefectures@maste
 let mode = "home";
 let currentCode = null;
 let used = new Set();
-let correct = Number(localStorage.getItem("tdfk4_correct") || 0);
-let total = Number(localStorage.getItem("tdfk4_total") || 0);
-let weak = new Set(JSON.parse(localStorage.getItem("tdfk4_weak") || "[]"));
-let streak = Number(localStorage.getItem("tdfk4_streak") || 0);
-let bestStreak = Number(localStorage.getItem("tdfk4_bestStreak") || 0);
-let best10 = localStorage.getItem("tdfk4_best10") || "";
-let best47 = localStorage.getItem("tdfk4_best47") || "";
+let correct = Number(localStorage.getItem("tdfk5_correct") || 0);
+let total = Number(localStorage.getItem("tdfk5_total") || 0);
+let weak = new Set(JSON.parse(localStorage.getItem("tdfk5_weak") || "[]"));
+let weakWins = JSON.parse(localStorage.getItem("tdfk5_weakWins") || "{}");
+let streak = Number(localStorage.getItem("tdfk5_streak") || 0);
+let bestStreak = Number(localStorage.getItem("tdfk5_bestStreak") || 0);
+let best10 = localStorage.getItem("tdfk5_best10") || "";
+let best47 = localStorage.getItem("tdfk5_best47") || "";
+let bestTime = localStorage.getItem("tdfk5_bestTime") || "";
+let medals = new Set(JSON.parse(localStorage.getItem("tdfk5_medals") || "[]"));
 let mapReady = false;
 
 let challengeActive = false;
@@ -199,21 +210,26 @@ let challengeSize = 0;
 let challengeAnswered = 0;
 let challengeCorrect = 0;
 let challengePool = [];
+let startTime = 0;
+let timerInterval = null;
+let timeAttack = false;
 
 const question = document.getElementById("question");
 const message = document.getElementById("message");
 const resultPanel = document.getElementById("resultPanel");
 
 function save() {
-  localStorage.setItem("tdfk4_correct", String(correct));
-  localStorage.setItem("tdfk4_total", String(total));
-  localStorage.setItem("tdfk4_weak", JSON.stringify(Array.from(weak)));
-  localStorage.setItem("tdfk4_streak", String(streak));
-  localStorage.setItem("tdfk4_bestStreak", String(bestStreak));
-  if (best10) localStorage.setItem("tdfk4_best10", best10);
-  if (best47) localStorage.setItem("tdfk4_best47", best47);
+  localStorage.setItem("tdfk5_correct", String(correct));
+  localStorage.setItem("tdfk5_total", String(total));
+  localStorage.setItem("tdfk5_weak", JSON.stringify(Array.from(weak)));
+  localStorage.setItem("tdfk5_weakWins", JSON.stringify(weakWins));
+  localStorage.setItem("tdfk5_streak", String(streak));
+  localStorage.setItem("tdfk5_bestStreak", String(bestStreak));
+  localStorage.setItem("tdfk5_medals", JSON.stringify(Array.from(medals)));
+  if (best10) localStorage.setItem("tdfk5_best10", best10);
+  if (best47) localStorage.setItem("tdfk5_best47", best47);
+  if (bestTime) localStorage.setItem("tdfk5_bestTime", bestTime);
 }
-
 function updateStats() {
   document.getElementById("correct").textContent = correct;
   document.getElementById("total").textContent = total;
@@ -222,8 +238,22 @@ function updateStats() {
   document.getElementById("streak").textContent = streak;
   document.getElementById("best10").textContent = best10 || "-";
   document.getElementById("best47").textContent = best47 || "-";
+  document.getElementById("bestTime").textContent = bestTime || "-";
+  renderMedals();
 }
-
+function renderMedals() {
+  const all = [
+    ["bronze","🥉 Bronze"],
+    ["silver","🥈 Silver"],
+    ["gold","🥇 Gold"],
+    ["perfect10","🏆 10問満点"],
+    ["master47","👑 全国制覇"],
+    ["speed","⚡ スピード"]
+  ];
+  document.getElementById("medalRow").innerHTML = all.map(([id,label]) =>
+    '<span class="medal '+(medals.has(id) ? "on" : "")+'">'+label+'</span>'
+  ).join("");
+}
 function updateProgress() {
   if (!challengeActive) {
     document.getElementById("progressText").textContent = "進み具合：通常モード";
@@ -235,7 +265,23 @@ function updateProgress() {
     "進み具合：" + challengeAnswered + " / " + challengeSize + "問（正解 " + challengeCorrect + "）";
   document.getElementById("progressFill").style.width = pct + "%";
 }
-
+function fmtSec(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m ? (m + "分" + String(s).padStart(2,"0") + "秒") : (s + "秒");
+}
+function startTimer() {
+  stopTimer();
+  startTime = Date.now();
+  timerInterval = setInterval(() => {
+    const sec = Math.floor((Date.now() - startTime) / 1000);
+    document.getElementById("timerText").textContent = "⏱ " + fmtSec(sec);
+  }, 250);
+}
+function stopTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+}
 function codeOf(el) {
   return String(Number(el.dataset.code || el.getAttribute("data-code")));
 }
@@ -263,12 +309,13 @@ function shuffle(arr) {
   }
   return a;
 }
-function startChallenge(size) {
+function startChallenge(size, timed=false) {
   if (!mapReady) {
     message.textContent = "地図を読み込み中です。少し待ってください。";
     return;
   }
-  mode = size === 47 ? "challenge47" : "challenge10";
+  mode = timed ? "time" : (size === 47 ? "challenge47" : "challenge10");
+  timeAttack = timed;
   challengeActive = true;
   challengeSize = size;
   challengeAnswered = 0;
@@ -281,6 +328,7 @@ function startChallenge(size) {
   challengePool = shuffle(base).slice(0, Math.min(size, base.length));
   challengeSize = challengePool.length;
   updateProgress();
+  if (timed) startTimer(); else { stopTimer(); document.getElementById("timerText").textContent = ""; }
   pickQuestion();
 }
 function pickQuestion() {
@@ -320,8 +368,9 @@ function pickQuestion() {
   question.textContent = "「" + data[0] + "」はどこ？";
   message.textContent = "ヒント：地方は「" + data[1] + "」／県庁所在地：" + data[2];
   message.className = "";
+  document.getElementById("graduateText").textContent = "";
 }
-function showResult(isCorrect, clickedCode) {
+function showResult(isCorrect, clickedCode, graduateMsg="") {
   const clicked = PREFS[clickedCode];
   const answer = PREFS[currentCode];
   document.getElementById("resultTitle").textContent = isCorrect ? "✨ 正解！" : "❌ まちがい";
@@ -329,6 +378,7 @@ function showResult(isCorrect, clickedCode) {
   document.getElementById("resultSub").textContent = isCorrect ? "ここは" : "ここは「" + clicked[0] + "」。正解は";
   document.getElementById("resultName").textContent = answer[0] + "（" + answer[3] + "）";
   document.getElementById("resultInfo").textContent = answer[1] + "／県庁所在地：" + answer[2];
+  document.getElementById("graduateText").textContent = graduateMsg;
   resultPanel.classList.add("show");
 }
 function answer(code, el) {
@@ -350,18 +400,29 @@ function answer(code, el) {
   if (challengeActive) challengeAnswered += 1;
 
   const isCorrect = code === currentCode;
+  let graduateMsg = "";
   if (isCorrect) {
     correct += 1;
     if (challengeActive) challengeCorrect += 1;
     streak += 1;
     if (streak > bestStreak) bestStreak = streak;
-    weak.delete(code);
+    if (weak.has(code)) {
+      weakWins[code] = (weakWins[code] || 0) + 1;
+      if (weakWins[code] >= 3) {
+        weak.delete(code);
+        weakWins[code] = 0;
+        graduateMsg = "🎓 苦手県から卒業！";
+      } else {
+        graduateMsg = "苦手卒業まであと " + (3 - weakWins[code]) + " 回正解";
+      }
+    }
     el.classList.add("correct");
     message.textContent = "○ 正解！ 連続正解 " + streak + "！";
     message.className = "okText";
   } else {
     streak = 0;
     weak.add(currentCode);
+    weakWins[currentCode] = 0;
     el.classList.add("wrong");
     const answerEl = document.querySelector('.geolonia-svg-map .prefecture[data-code="' + Number(currentCode) + '"]');
     if (answerEl) answerEl.classList.add("correct");
@@ -371,15 +432,26 @@ function answer(code, el) {
   save();
   updateStats();
   updateProgress();
-  showResult(isCorrect, code);
+  showResult(isCorrect, code, graduateMsg);
   if (challengeActive && challengeAnswered >= challengeSize) {
     setTimeout(finishChallenge, 850);
   }
 }
+function awardMedals(pct, elapsedSec) {
+  if (total >= 10) medals.add("bronze");
+  if (total >= 50) medals.add("silver");
+  if (total >= 100) medals.add("gold");
+  if (challengeSize === 10 && pct === 100) medals.add("perfect10");
+  if (challengeSize === 47 && pct >= 80) medals.add("master47");
+  if (timeAttack && pct >= 80 && elapsedSec <= 120) medals.add("speed");
+}
 function finishChallenge() {
   if (!challengeActive) return;
+  stopTimer();
+  const elapsedSec = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
   const scoreText = challengeCorrect + " / " + challengeSize;
   const pct = Math.round(challengeCorrect / challengeSize * 100);
+
   if (challengeSize === 10) {
     const prev = best10 ? Number(best10.split("/")[0]) : -1;
     if (challengeCorrect > prev) best10 = scoreText;
@@ -388,34 +460,45 @@ function finishChallenge() {
     const prev = best47 ? Number(best47.split("/")[0]) : -1;
     if (challengeCorrect > prev) best47 = scoreText;
   }
+  if (timeAttack && pct >= 80) {
+    const prevSec = bestTime ? Number(bestTime.replace(/[^0-9]/g, "")) : 999999;
+    if (!bestTime || elapsedSec < prevSec) bestTime = fmtSec(elapsedSec);
+  }
+  awardMedals(pct, elapsedSec);
   save();
   updateStats();
+
   document.getElementById("finishTitle").textContent =
-    challengeSize === 47 ? "👑 47県制覇チャレンジ終了！" : "🏅 10問チャレンジ終了！";
+    timeAttack ? "⏱ タイムアタック終了！" : (challengeSize === 47 ? "👑 47県制覇チャレンジ終了！" : "🏅 10問チャレンジ終了！");
   document.getElementById("finishScore").textContent = scoreText;
   let text = pct === 100 ? "満点！すごい！" : pct >= 80 ? "かなり良い感じ！" : pct >= 60 ? "あと少し！" : "苦手県を復習しよう！";
+  if (timeAttack) text += "　記録：" + fmtSec(elapsedSec);
   document.getElementById("finishText").textContent = text + "（正答率 " + pct + "%）";
+
   const badges = [];
   if (pct === 100) badges.push("🏆 パーフェクト");
   if (challengeSize === 47 && pct >= 80) badges.push("🗾 全国マスター");
   if (streak >= 10) badges.push("🔥 連続正解 " + streak);
+  if (timeAttack) badges.push("⏱ " + fmtSec(elapsedSec));
   document.getElementById("finishBadges").innerHTML = badges.map(b => '<span class="badge">'+b+'</span>').join("");
+
   document.getElementById("finishModal").classList.add("show");
   confetti();
   challengeActive = false;
+  timeAttack = false;
   updateProgress();
 }
 function confetti() {
   const colors = ["#08a6a0","#86efac","#facc15","#fb7185","#60a5fa"];
-  for (let i=0; i<70; i++) {
+  for (let i=0; i<80; i++) {
     const d = document.createElement("div");
     d.className = "confetti";
     d.style.left = Math.random()*100 + "vw";
     d.style.background = colors[Math.floor(Math.random()*colors.length)];
-    d.style.animationDelay = Math.random()*0.4 + "s";
+    d.style.animationDelay = Math.random()*0.45 + "s";
     d.style.transform = "rotate(" + Math.random()*360 + "deg)";
     document.body.appendChild(d);
-    setTimeout(()=>d.remove(), 2300);
+    setTimeout(()=>d.remove(), 2400);
   }
 }
 async function loadMap() {
@@ -444,44 +527,57 @@ async function loadMap() {
     document.getElementById("map").innerHTML = '<div class="loading">地図の読み込みに失敗しました。ネット接続を確認して、再読み込みしてください。</div>';
   }
 }
-Object.entries(PREFS).forEach(([code, data]) => {
-  const chip = document.createElement("div");
-  chip.className = "chip";
-  chip.textContent = data[0] + "｜" + data[2];
-  document.getElementById("prefList").appendChild(chip);
-});
+function renderList() {
+  const list = document.getElementById("prefList");
+  list.innerHTML = "";
+  Object.entries(PREFS).forEach(([code, data]) => {
+    const chip = document.createElement("div");
+    chip.className = "chip" + (weak.has(code) ? " weakChip" : "");
+    const add = weak.has(code) ? " 🧠" + (weakWins[code] ? " " + weakWins[code] + "/3" : "") : "";
+    chip.textContent = data[0] + "｜" + data[2] + add;
+    list.appendChild(chip);
+  });
+}
 document.getElementById("startBtn").addEventListener("click", () => {
-  mode = "quiz"; challengeActive = false; used = new Set(); message.className = ""; clearMarks(); updateProgress(); pickQuestion();
+  mode = "quiz"; challengeActive = false; timeAttack = false; used = new Set(); stopTimer(); document.getElementById("timerText").textContent="";
+  message.className = ""; clearMarks(); updateProgress(); pickQuestion();
 });
-document.getElementById("tenBtn").addEventListener("click", () => startChallenge(10));
-document.getElementById("allBtn").addEventListener("click", () => startChallenge(47));
+document.getElementById("tenBtn").addEventListener("click", () => startChallenge(10, false));
+document.getElementById("allBtn").addEventListener("click", () => startChallenge(47, false));
+document.getElementById("timeBtn").addEventListener("click", () => startChallenge(10, true));
 document.getElementById("learnBtn").addEventListener("click", () => {
-  mode = "learn"; challengeActive = false; currentCode = null; resultPanel.classList.remove("show"); clearMarks(); updateProgress();
+  mode = "learn"; challengeActive = false; timeAttack = false; currentCode = null; stopTimer(); document.getElementById("timerText").textContent="";
+  resultPanel.classList.remove("show"); clearMarks(); updateProgress();
   question.textContent = "地図の県をクリックして確認";
   message.textContent = "学習モードです。県そのものをクリックしてね。";
   message.className = "";
 });
 document.getElementById("weakBtn").addEventListener("click", () => {
-  mode = "weak"; challengeActive = false; used = new Set(); message.className = ""; clearMarks(); updateProgress(); pickQuestion();
+  mode = "weak"; challengeActive = false; timeAttack = false; used = new Set(); stopTimer(); document.getElementById("timerText").textContent="";
+  message.className = ""; clearMarks(); updateProgress(); pickQuestion();
 });
 document.getElementById("nextBtn").addEventListener("click", pickQuestion);
 document.getElementById("region").addEventListener("change", () => {
-  if (mode !== "learn") { mode = "quiz"; challengeActive = false; used = new Set(); message.className = ""; clearMarks(); updateProgress(); pickQuestion(); }
+  if (mode !== "learn") { mode = "quiz"; challengeActive = false; timeAttack = false; used = new Set(); stopTimer(); document.getElementById("timerText").textContent="";
+  message.className = ""; clearMarks(); updateProgress(); pickQuestion(); }
 });
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (confirm("記録を消しますか？")) {
-    correct = 0; total = 0; weak = new Set(); used = new Set(); streak = 0; bestStreak = 0; best10 = ""; best47 = ""; challengeActive = false;
-    localStorage.removeItem("tdfk4_best10"); localStorage.removeItem("tdfk4_best47");
-    save(); updateStats(); updateProgress(); clearMarks(); resultPanel.classList.remove("show");
+    correct = 0; total = 0; weak = new Set(); weakWins = {}; used = new Set(); streak = 0; bestStreak = 0;
+    best10 = ""; best47 = ""; bestTime = ""; medals = new Set(); challengeActive = false; timeAttack = false;
+    ["tdfk5_best10","tdfk5_best47","tdfk5_bestTime","tdfk5_medals"].forEach(k=>localStorage.removeItem(k));
+    save(); updateStats(); updateProgress(); renderList(); clearMarks(); resultPanel.classList.remove("show"); stopTimer(); document.getElementById("timerText").textContent="";
     question.textContent = "記録をリセットしました"; message.textContent = ""; message.className = "";
   }
 });
 document.getElementById("closeFinish").addEventListener("click", () => {
   document.getElementById("finishModal").classList.remove("show");
   resultPanel.classList.remove("show");
+  renderList();
 });
 updateStats();
 updateProgress();
+renderList();
 loadMap();
 </script>
 </body>
