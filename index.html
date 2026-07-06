@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>都道府県マスター Ver.6.1</title>
+<title>日本地理マスター Ver.7</title>
 <style>
 :root {
   --main:#08a6a0; --main2:#6ed2cf; --bg:#eefafa; --card:#ffffff;
@@ -150,11 +150,15 @@ button.pulse {
 </style>
 </head>
 <body>
-<header><h1>👑 都道府県マスター Ver.6.1.1</h1></header>
+<header><h1>👑 日本地理マスター Ver.7.1</h1></header>
 <main>
   <section class="card topGrid">
     <div>
       <div class="controls">
+        <select id="quizType">
+          <option value="prefecture">都道府県の位置</option>
+          <option value="capital">県庁所在地</option>
+        </select>
         <select id="region">
           <option>全国</option><option>北海道</option><option>東北</option><option>関東</option>
           <option>中部</option><option>近畿</option><option>中国</option><option>四国</option><option>九州・沖縄</option>
@@ -169,7 +173,7 @@ button.pulse {
         <button class="soft" id="soundBtn">🔊 音ON</button>
       </div>
       <div id="question">「クイズ」を押してね</div>
-      <div id="message">Ver.6.1：マウスオーバーの県名表示を廃止。</div>
+      <div id="message">Ver.7：県庁所在地モードを追加。</div>
       <div class="progressWrap">
         <div class="progressText" id="progressText">進み具合：未開始</div>
         <div class="progressBar"><div id="progressFill"></div></div>
@@ -487,8 +491,14 @@ function pickQuestion() {
   currentCode = pool[Math.floor(Math.random() * pool.length)];
   used.add(currentCode);
   const data = PREFS[currentCode];
-  question.textContent = "「" + data[0] + "」はどこ？";
-  message.textContent = "ヒント：地方は「" + data[1] + "」／県庁所在地：" + data[2];
+  const type = document.getElementById("quizType").value;
+  if (type === "capital") {
+    question.textContent = "「" + data[2] + "」が県庁所在地なのはどこ？";
+    message.textContent = "ヒント：地方は「" + data[1] + "」";
+  } else {
+    question.textContent = "「" + data[0] + "」はどこ？";
+    message.textContent = "ヒント：地方は「" + data[1] + "」／県庁所在地：" + data[2];
+  }
   message.className = "";
   document.getElementById("graduateText").textContent = "";
 }
@@ -498,8 +508,14 @@ function showResult(isCorrect, clickedCode, graduateMsg="") {
   document.getElementById("resultTitle").textContent = isCorrect ? "✨ 正解！" : "❌ まちがい";
   document.getElementById("resultTitle").className = isCorrect ? "okText" : "ngText";
   document.getElementById("resultSub").textContent = isCorrect ? "ここは" : "ここは「" + clicked[0] + "」。正解は";
-  document.getElementById("resultName").textContent = answer[0] + "（" + answer[3] + "）";
-  document.getElementById("resultInfo").textContent = answer[1] + "／県庁所在地：" + answer[2];
+  const type = document.getElementById("quizType").value;
+  if (type === "capital") {
+    document.getElementById("resultName").textContent = answer[0];
+    document.getElementById("resultInfo").textContent = "県庁所在地：" + answer[2] + "（" + answer[3] + "）／" + answer[1];
+  } else {
+    document.getElementById("resultName").textContent = answer[0] + "（" + answer[3] + "）";
+    document.getElementById("resultInfo").textContent = answer[1] + "／県庁所在地：" + answer[2];
+  }
   document.getElementById("graduateText").textContent = graduateMsg;
   resultPanel.classList.add("show");
 }
@@ -678,7 +694,7 @@ document.getElementById("learnBtn").addEventListener("click", () => {
   mode = "learn"; challengeActive = false; timeAttack = false; currentCode = null; stopTimer(); document.getElementById("timerText").textContent="";
   resultPanel.classList.remove("show"); clearMarks(); updateProgress();
   question.textContent = "地図の県をクリックして確認";
-  message.textContent = "学習モードです。県そのものをクリックしてね。";
+  message.textContent = "学習モードです。県をクリックすると県名・県庁所在地が確認できます。";
   message.className = "";
 });
 document.getElementById("weakBtn").addEventListener("click", () => {
@@ -686,6 +702,10 @@ document.getElementById("weakBtn").addEventListener("click", () => {
   message.className = ""; clearMarks(); updateProgress(); pickQuestion();
 });
 document.getElementById("nextBtn").addEventListener("click", pickQuestion);
+document.getElementById("quizType").addEventListener("change", () => {
+  if (mode !== "learn") { mode = "quiz"; used = new Set(); message.className = ""; clearMarks(); pickQuestion(); }
+});
+
 document.getElementById("region").addEventListener("change", () => {
   if (mode !== "learn") { mode = "quiz"; challengeActive = false; timeAttack = false; used = new Set(); stopTimer(); document.getElementById("timerText").textContent="";
   message.className = ""; clearMarks(); updateProgress(); pickQuestion(); }
