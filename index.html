@@ -41,7 +41,6 @@ button, select {
 }
 button.primary { background:#20a7a2; color:white; }
 button.danger { background:#ffecec; color:#a62121; }
-button:active { transform:scale(.98); }
 .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 select { background:white; border:1px solid #cfe1e1; }
 #question { font-size:25px; font-weight:900; margin:10px 0 4px; line-height:1.35; }
@@ -60,63 +59,57 @@ select { background:white; border:1px solid #cfe1e1; }
   box-shadow:0 4px 18px rgba(20,80,80,.10);
   margin-bottom:12px;
 }
-.map { position:relative; min-width:680px; }
+.map { position:relative; min-width:760px; }
 .map img { width:100%; display:block; user-select:none; -webkit-user-drag:none; }
 .pin {
   position:absolute;
   transform:translate(-50%,-50%);
-  width:32px;
-  height:32px;
+  width:18px;
+  height:18px;
   border-radius:50%;
   padding:0;
   z-index:5;
-  background:rgba(32,167,162,.28);
-  border:2px solid rgba(0,0,0,.38);
-  box-shadow:0 2px 6px rgba(0,0,0,.18);
+  background:rgba(32,167,162,.55);
+  border:2px solid rgba(0,0,0,.45);
+  box-shadow:0 1px 4px rgba(0,0,0,.25);
 }
-.pin.hit { background:rgba(33,166,91,.85); border-color:#127a3d; }
-.pin.miss { background:rgba(227,76,76,.85); border-color:#a62020; }
-.pin.learn { background:rgba(244,180,0,.82); border-color:#9a7200; }
+.pin::after {
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:34px;
+  height:34px;
+  border-radius:50%;
+}
+.pin.hit { background:rgba(33,166,91,.95); border-color:#127a3d; }
+.pin.miss { background:rgba(227,76,76,.95); border-color:#a62020; }
+.pin.learn { background:rgba(244,180,0,.95); border-color:#9a7200; }
 .label {
   display:none;
   position:absolute;
-  left:20px;
-  top:-12px;
+  left:14px;
+  top:-13px;
   white-space:nowrap;
   background:white;
   border:1px solid #9eb0b2;
   border-radius:8px;
   padding:2px 6px;
   font-size:13px;
+  box-shadow:0 1px 5px rgba(0,0,0,.18);
 }
 .showLabels .label { display:block; }
 .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; }
 .chip { background:#f5fbfb; padding:8px 10px; border-radius:12px; font-size:14px; }
 .small { color:#667; font-size:13px; line-height:1.6; }
-.clear {
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.45);
-  z-index:50;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-}
-.clear.show { display:flex; }
-.clearInner {
-  background:white;
-  border-radius:24px;
-  padding:28px;
-  text-align:center;
-  max-width:420px;
-}
 @media(max-width:760px) {
   .buttons { grid-template-columns:repeat(2,1fr); }
   .stats { grid-template-columns:repeat(2,1fr); }
   #question { font-size:22px; }
-  .map { min-width:640px; }
-  .pin { width:34px; height:34px; }
+  .map { min-width:760px; }
+  .pin { width:20px; height:20px; }
+  .pin::after { width:40px; height:40px; }
 }
 </style>
 </head>
@@ -165,21 +158,13 @@ select { background:white; border:1px solid #cfe1e1; }
 </section>
 
 <section class="card">
-  <p class="small">地図は横にスクロールできます。まずは「答え」で位置を見てから「クイズ」で練習するのがおすすめ。</p>
+  <p class="small">丸は小さくしましたが、タップ判定は少し広めにしています。答えボタンで県名を表示できます。</p>
   <div class="grid" id="prefList"></div>
 </section>
 </main>
 
-<div class="clear" id="clearBox">
-  <div class="clearInner">
-    <h2>🎉 全国制覇！</h2>
-    <p>47都道府県を全部練習できたよ。</p>
-    <button class="primary" id="closeClear">閉じる</button>
-  </div>
-</div>
-
 <script>
-const prefs = [["北海道", "北海道", "札幌市", 72, 13], ["青森県", "東北", "青森市", 66, 28], ["岩手県", "東北", "盛岡市", 70, 35], ["宮城県", "東北", "仙台市", 70, 43], ["秋田県", "東北", "秋田市", 64, 36], ["山形県", "東北", "山形市", 65, 44], ["福島県", "東北", "福島市", 67, 51], ["茨城県", "関東", "水戸市", 69, 60], ["栃木県", "関東", "宇都宮市", 65, 57], ["群馬県", "関東", "前橋市", 61, 57], ["埼玉県", "関東", "さいたま市", 63, 62], ["千葉県", "関東", "千葉市", 68, 66], ["東京都", "関東", "新宿区", 63.5, 66], ["神奈川県", "関東", "横浜市", 61.5, 69], ["新潟県", "中部", "新潟市", 57, 48], ["富山県", "中部", "富山市", 51, 55], ["石川県", "中部", "金沢市", 47, 56], ["福井県", "中部", "福井市", 43, 60], ["山梨県", "中部", "甲府市", 58, 65], ["長野県", "中部", "長野市", 55, 60], ["岐阜県", "中部", "岐阜市", 49, 64], ["静岡県", "中部", "静岡市", 56, 70], ["愛知県", "中部", "名古屋市", 50, 70], ["三重県", "近畿", "津市", 46, 73], ["滋賀県", "近畿", "大津市", 45, 65], ["京都府", "近畿", "京都市", 41, 65], ["大阪府", "近畿", "大阪市", 39, 70], ["兵庫県", "近畿", "神戸市", 35, 67], ["奈良県", "近畿", "奈良市", 42, 72], ["和歌山県", "近畿", "和歌山市", 39, 77], ["鳥取県", "中国", "鳥取市", 30, 62], ["島根県", "中国", "松江市", 25, 61], ["岡山県", "中国", "岡山市", 31, 68], ["広島県", "中国", "広島市", 25, 69], ["山口県", "中国", "山口市", 17, 70], ["徳島県", "四国", "徳島市", 35, 76], ["香川県", "四国", "高松市", 31, 73], ["愛媛県", "四国", "松山市", 25, 77], ["高知県", "四国", "高知市", 29, 82], ["福岡県", "九州・沖縄", "福岡市", 13, 74], ["佐賀県", "九州・沖縄", "佐賀市", 9, 77], ["長崎県", "九州・沖縄", "長崎市", 7, 80], ["熊本県", "九州・沖縄", "熊本市", 10, 84], ["大分県", "九州・沖縄", "大分市", 15, 82], ["宮崎県", "九州・沖縄", "宮崎市", 14, 90], ["鹿児島県", "九州・沖縄", "鹿児島市", 9, 92], ["沖縄県", "九州・沖縄", "那覇市", 78, 73]];
+const prefs = [["北海道", "北海道", "札幌市", 73.5, 13.7], ["青森県", "東北", "青森市", 64.9, 30.3], ["岩手県", "東北", "盛岡市", 69.5, 36.6], ["宮城県", "東北", "仙台市", 68.7, 45.0], ["秋田県", "東北", "秋田市", 63.7, 37.5], ["山形県", "東北", "山形市", 64.7, 45.0], ["福島県", "東北", "福島市", 65.7, 52.2], ["茨城県", "関東", "水戸市", 66.4, 61.4], ["栃木県", "関東", "宇都宮市", 62.8, 58.5], ["群馬県", "関東", "前橋市", 59.5, 58.8], ["埼玉県", "関東", "さいたま市", 61.8, 62.7], ["千葉県", "関東", "千葉市", 66.8, 66.8], ["東京都", "関東", "新宿区", 62.6, 66.0], ["神奈川県", "関東", "横浜市", 61.2, 68.7], ["新潟県", "中部", "新潟市", 56.8, 49.8], ["富山県", "中部", "富山市", 49.8, 55.8], ["石川県", "中部", "金沢市", 45.7, 58.3], ["福井県", "中部", "福井市", 43.6, 62.0], ["山梨県", "中部", "甲府市", 57.9, 65.6], ["長野県", "中部", "長野市", 54.2, 61.0], ["岐阜県", "中部", "岐阜市", 48.8, 65.4], ["静岡県", "中部", "静岡市", 56.6, 70.0], ["愛知県", "中部", "名古屋市", 50.5, 70.2], ["三重県", "近畿", "津市", 46.9, 72.8], ["滋賀県", "近畿", "大津市", 45.5, 66.6], ["京都府", "近畿", "京都市", 42.1, 66.0], ["大阪府", "近畿", "大阪市", 40.2, 70.5], ["兵庫県", "近畿", "神戸市", 36.5, 67.4], ["奈良県", "近畿", "奈良市", 43.2, 71.7], ["和歌山県", "近畿", "和歌山市", 40.5, 76.6], ["鳥取県", "中国", "鳥取市", 31.0, 63.5], ["島根県", "中国", "松江市", 26.2, 63.7], ["岡山県", "中国", "岡山市", 31.1, 69.2], ["広島県", "中国", "広島市", 26.5, 70.2], ["山口県", "中国", "山口市", 19.2, 72.4], ["徳島県", "四国", "徳島市", 35.7, 77.0], ["香川県", "四国", "高松市", 32.0, 74.2], ["愛媛県", "四国", "松山市", 26.5, 77.8], ["高知県", "四国", "高知市", 30.6, 82.0], ["福岡県", "九州・沖縄", "福岡市", 13.8, 76.3], ["佐賀県", "九州・沖縄", "佐賀市", 10.8, 78.9], ["長崎県", "九州・沖縄", "長崎市", 8.7, 81.3], ["熊本県", "九州・沖縄", "熊本市", 11.6, 84.4], ["大分県", "九州・沖縄", "大分市", 16.2, 81.5], ["宮崎県", "九州・沖縄", "宮崎市", 15.1, 89.0], ["鹿児島県", "九州・沖縄", "鹿児島市", 10.9, 91.4], ["沖縄県", "九州・沖縄", "那覇市", 79.5, 74.8]];
 let mode = "home";
 let current = null;
 let used = new Set();
@@ -354,10 +339,6 @@ document.getElementById("resetBtn").addEventListener("click", function() {
     question.textContent = "記録をリセットしました";
     message.textContent = "";
   }
-});
-
-document.getElementById("closeClear").addEventListener("click", function() {
-  document.getElementById("clearBox").classList.remove("show");
 });
 
 updateStats();
