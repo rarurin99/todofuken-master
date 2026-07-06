@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>都道府県マスター Ver.3</title>
+<title>都道府県マスター Ver.4</title>
 <style>
 :root {
   --main:#08a6a0; --main2:#6ed2cf; --bg:#eefafa; --card:#ffffff;
@@ -24,17 +24,18 @@ main { max-width:1180px; margin:auto; padding:14px; }
   background:rgba(255,255,255,.94); border:1px solid rgba(0,0,0,.06); border-radius:20px;
   padding:16px; margin-bottom:14px; box-shadow:0 5px 22px rgba(0,80,80,.10);
 }
-.topGrid { display:grid; grid-template-columns:1.2fr .8fr; gap:14px; }
+.topGrid { display:grid; grid-template-columns:1.15fr .85fr; gap:14px; }
 .controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 button, select {
   appearance:none; border:0; border-radius:14px; min-height:46px; padding:10px 14px;
   font-size:16px; font-weight:800; background:#e8f8f7; color:var(--text);
 }
 button.primary { background:var(--main); color:white; }
+button.challenge { background:#fff7df; color:#8a5a00; border:1px solid #f5d47a; }
 button.danger { background:#ffecec; color:#b91c1c; }
 button.soft { background:#f0fbfb; }
 button:active { transform:scale(.98); }
-select { background:white; border:1px solid #d0e4e5; min-width:160px; }
+select { background:white; border:1px solid #d0e4e5; min-width:150px; }
 #question { margin:14px 0 4px; font-size:30px; line-height:1.3; font-weight:900; }
 #message { min-height:32px; font-size:18px; font-weight:900; }
 .okText { color:var(--ok); } .ngText { color:var(--ng); }
@@ -42,6 +43,10 @@ select { background:white; border:1px solid #d0e4e5; min-width:160px; }
 .stat { background:#f5fbfb; border:1px solid #d9eeee; border-radius:16px; padding:10px; text-align:center; }
 .stat b { display:block; font-size:24px; }
 .stat span { font-size:12px; color:var(--muted); }
+.progressWrap { margin-top:12px; }
+.progressText { font-size:13px; color:var(--muted); margin-bottom:5px; }
+.progressBar { height:12px; background:#e4f3f3; border-radius:99px; overflow:hidden; }
+#progressFill { height:100%; width:0%; background:linear-gradient(90deg,#08a6a0,#86efac); transition:width .25s; }
 .mapCard { position:relative; overflow:hidden; }
 #map {
   width:100%; min-height:560px; display:flex; align-items:center; justify-content:center;
@@ -58,7 +63,7 @@ select { background:white; border:1px solid #d0e4e5; min-width:160px; }
 .geolonia-svg-map .prefecture.wrong { fill:#fca5a5 !important; }
 .geolonia-svg-map .prefecture.learn { fill:#fef3c7 !important; }
 .resultPanel {
-  position:absolute; right:26px; bottom:28px; width:min(320px, calc(100% - 52px));
+  position:absolute; right:26px; bottom:28px; width:min(330px, calc(100% - 52px));
   background:white; border-radius:22px; box-shadow:0 8px 28px rgba(0,0,0,.18);
   border:1px solid #d9eeee; padding:18px; text-align:center; display:none;
 }
@@ -72,6 +77,28 @@ select { background:white; border:1px solid #d0e4e5; min-width:160px; }
 .chip { padding:9px 10px; background:#f5fbfb; border:1px solid #e0eeee; border-radius:13px; font-size:14px; }
 .small { color:var(--muted); font-size:13px; line-height:1.6; }
 .loading { font-weight:900; color:var(--muted); padding:20px; }
+.modal {
+  position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.45);
+  display:none; align-items:center; justify-content:center; padding:18px;
+}
+.modal.show { display:flex; }
+.modalInner {
+  width:min(520px,100%); background:white; border-radius:26px; padding:26px;
+  text-align:center; box-shadow:0 18px 60px rgba(0,0,0,.3);
+}
+.modalInner h2 { font-size:34px; margin:0 0 10px; }
+.modalScore { font-size:44px; font-weight:900; color:var(--main); margin:8px 0; }
+.badge {
+  display:inline-block; padding:8px 12px; border-radius:999px; background:#fff3c4;
+  color:#7a4f00; font-weight:900; margin:5px;
+}
+.confetti {
+  position:fixed; width:10px; height:10px; top:-20px; z-index:60; pointer-events:none;
+  animation:fall 1.8s linear forwards;
+}
+@keyframes fall {
+  to { transform:translateY(110vh) rotate(720deg); opacity:.9; }
+}
 @media(max-width:850px) {
   main { padding:10px; } .topGrid { grid-template-columns:1fr; } .stats { grid-template-columns:repeat(2,1fr); }
   #question { font-size:25px; } #map { min-height:460px; justify-content:flex-start; }
@@ -80,7 +107,7 @@ select { background:white; border:1px solid #d0e4e5; min-width:160px; }
 </style>
 </head>
 <body>
-<header><h1>👑 都道府県マスター Ver.3</h1></header>
+<header><h1>👑 都道府県マスター Ver.4</h1></header>
 <main>
   <section class="card topGrid">
     <div>
@@ -90,21 +117,32 @@ select { background:white; border:1px solid #d0e4e5; min-width:160px; }
           <option>中部</option><option>近畿</option><option>中国</option><option>四国</option><option>九州・沖縄</option>
         </select>
         <button class="primary" id="startBtn">🎮 クイズ</button>
+        <button class="challenge" id="tenBtn">🏅 10問</button>
+        <button class="challenge" id="allBtn">👑 47県制覇</button>
         <button class="soft" id="learnBtn">📍 学習</button>
         <button class="soft" id="weakBtn">🧠 苦手</button>
         <button class="danger" id="resetBtn">記録リセット</button>
       </div>
       <div id="question">「クイズ」を押してね</div>
-      <div id="message">県の形そのものをクリックできます。出題中の県は色が変わりません。</div>
+      <div id="message">県の形そのものをクリックできます。</div>
+      <div class="progressWrap">
+        <div class="progressText" id="progressText">進み具合：未開始</div>
+        <div class="progressBar"><div id="progressFill"></div></div>
+      </div>
     </div>
     <div>
       <div class="stats">
         <div class="stat"><b id="correct">0</b><span>正解</span></div>
         <div class="stat"><b id="total">0</b><span>問題</span></div>
         <div class="stat"><b id="rate">0%</b><span>正答率</span></div>
-        <div class="stat"><b id="weakCount">0</b><span>苦手県</span></div>
+        <div class="stat"><b id="streak">0</b><span>連続正解</span></div>
       </div>
-      <p class="small">クイズ中は答えるまで正解県をハイライトしません。</p>
+      <div class="stats" style="grid-template-columns:repeat(3,1fr);">
+        <div class="stat"><b id="weakCount">0</b><span>苦手県</span></div>
+        <div class="stat"><b id="best10">-</b><span>10問ベスト</span></div>
+        <div class="stat"><b id="best47">-</b><span>47県ベスト</span></div>
+      </div>
+      <p class="small">10問・47県制覇では終了時に結果が出ます。</p>
     </div>
   </section>
 
@@ -130,32 +168,74 @@ select { background:white; border:1px solid #d0e4e5; min-width:160px; }
   </section>
 </main>
 
+<div class="modal" id="finishModal">
+  <div class="modalInner">
+    <h2 id="finishTitle">チャレンジ終了！</h2>
+    <div class="modalScore" id="finishScore">10/10</div>
+    <div id="finishText">すごい！</div>
+    <div id="finishBadges"></div>
+    <button class="primary" id="closeFinish" style="margin-top:16px;">閉じる</button>
+  </div>
+</div>
+
 <script>
 const PREFS = {"1": ["北海道", "北海道", "札幌市", "ほっかいどう"], "2": ["青森県", "東北", "青森市", "あおもりけん"], "3": ["岩手県", "東北", "盛岡市", "いわてけん"], "4": ["宮城県", "東北", "仙台市", "みやぎけん"], "5": ["秋田県", "東北", "秋田市", "あきたけん"], "6": ["山形県", "東北", "山形市", "やまがたけん"], "7": ["福島県", "東北", "福島市", "ふくしまけん"], "8": ["茨城県", "関東", "水戸市", "いばらきけん"], "9": ["栃木県", "関東", "宇都宮市", "とちぎけん"], "10": ["群馬県", "関東", "前橋市", "ぐんまけん"], "11": ["埼玉県", "関東", "さいたま市", "さいたまけん"], "12": ["千葉県", "関東", "千葉市", "ちばけん"], "13": ["東京都", "関東", "新宿区", "とうきょうと"], "14": ["神奈川県", "関東", "横浜市", "かながわけん"], "15": ["新潟県", "中部", "新潟市", "にいがたけん"], "16": ["富山県", "中部", "富山市", "とやまけん"], "17": ["石川県", "中部", "金沢市", "いしかわけん"], "18": ["福井県", "中部", "福井市", "ふくいけん"], "19": ["山梨県", "中部", "甲府市", "やまなしけん"], "20": ["長野県", "中部", "長野市", "ながのけん"], "21": ["岐阜県", "中部", "岐阜市", "ぎふけん"], "22": ["静岡県", "中部", "静岡市", "しずおかけん"], "23": ["愛知県", "中部", "名古屋市", "あいちけん"], "24": ["三重県", "近畿", "津市", "みえけん"], "25": ["滋賀県", "近畿", "大津市", "しがけん"], "26": ["京都府", "近畿", "京都市", "きょうとふ"], "27": ["大阪府", "近畿", "大阪市", "おおさかふ"], "28": ["兵庫県", "近畿", "神戸市", "ひょうごけん"], "29": ["奈良県", "近畿", "奈良市", "ならけん"], "30": ["和歌山県", "近畿", "和歌山市", "わかやまけん"], "31": ["鳥取県", "中国", "鳥取市", "とっとりけん"], "32": ["島根県", "中国", "松江市", "しまねけん"], "33": ["岡山県", "中国", "岡山市", "おかやまけん"], "34": ["広島県", "中国", "広島市", "ひろしまけん"], "35": ["山口県", "中国", "山口市", "やまぐちけん"], "36": ["徳島県", "四国", "徳島市", "とくしまけん"], "37": ["香川県", "四国", "高松市", "かがわけん"], "38": ["愛媛県", "四国", "松山市", "えひめけん"], "39": ["高知県", "四国", "高知市", "こうちけん"], "40": ["福岡県", "九州・沖縄", "福岡市", "ふくおかけん"], "41": ["佐賀県", "九州・沖縄", "佐賀市", "さがけん"], "42": ["長崎県", "九州・沖縄", "長崎市", "ながさきけん"], "43": ["熊本県", "九州・沖縄", "熊本市", "くまもとけん"], "44": ["大分県", "九州・沖縄", "大分市", "おおいたけん"], "45": ["宮崎県", "九州・沖縄", "宮崎市", "みやざきけん"], "46": ["鹿児島県", "九州・沖縄", "鹿児島市", "かごしまけん"], "47": ["沖縄県", "九州・沖縄", "那覇市", "おきなわけん"]};
 const MAP_URL = "https://cdn.jsdelivr.net/gh/geolonia/japanese-prefectures@master/map-full.svg";
+
 let mode = "home";
 let currentCode = null;
 let used = new Set();
-let correct = Number(localStorage.getItem("tdfk3_correct") || 0);
-let total = Number(localStorage.getItem("tdfk3_total") || 0);
-let weak = new Set(JSON.parse(localStorage.getItem("tdfk3_weak") || "[]"));
+let correct = Number(localStorage.getItem("tdfk4_correct") || 0);
+let total = Number(localStorage.getItem("tdfk4_total") || 0);
+let weak = new Set(JSON.parse(localStorage.getItem("tdfk4_weak") || "[]"));
+let streak = Number(localStorage.getItem("tdfk4_streak") || 0);
+let bestStreak = Number(localStorage.getItem("tdfk4_bestStreak") || 0);
+let best10 = localStorage.getItem("tdfk4_best10") || "";
+let best47 = localStorage.getItem("tdfk4_best47") || "";
 let mapReady = false;
+
+let challengeActive = false;
+let challengeSize = 0;
+let challengeAnswered = 0;
+let challengeCorrect = 0;
+let challengePool = [];
 
 const question = document.getElementById("question");
 const message = document.getElementById("message");
 const resultPanel = document.getElementById("resultPanel");
 
 function save() {
-  localStorage.setItem("tdfk3_correct", String(correct));
-  localStorage.setItem("tdfk3_total", String(total));
-  localStorage.setItem("tdfk3_weak", JSON.stringify(Array.from(weak)));
+  localStorage.setItem("tdfk4_correct", String(correct));
+  localStorage.setItem("tdfk4_total", String(total));
+  localStorage.setItem("tdfk4_weak", JSON.stringify(Array.from(weak)));
+  localStorage.setItem("tdfk4_streak", String(streak));
+  localStorage.setItem("tdfk4_bestStreak", String(bestStreak));
+  if (best10) localStorage.setItem("tdfk4_best10", best10);
+  if (best47) localStorage.setItem("tdfk4_best47", best47);
 }
+
 function updateStats() {
   document.getElementById("correct").textContent = correct;
   document.getElementById("total").textContent = total;
   document.getElementById("rate").textContent = total ? Math.round(correct / total * 100) + "%" : "0%";
   document.getElementById("weakCount").textContent = weak.size;
+  document.getElementById("streak").textContent = streak;
+  document.getElementById("best10").textContent = best10 || "-";
+  document.getElementById("best47").textContent = best47 || "-";
 }
+
+function updateProgress() {
+  if (!challengeActive) {
+    document.getElementById("progressText").textContent = "進み具合：通常モード";
+    document.getElementById("progressFill").style.width = "0%";
+    return;
+  }
+  const pct = challengeSize ? Math.round(challengeAnswered / challengeSize * 100) : 0;
+  document.getElementById("progressText").textContent =
+    "進み具合：" + challengeAnswered + " / " + challengeSize + "問（正解 " + challengeCorrect + "）";
+  document.getElementById("progressFill").style.width = pct + "%";
+}
+
 function codeOf(el) {
   return String(Number(el.dataset.code || el.getAttribute("data-code")));
 }
@@ -168,12 +248,40 @@ function clearMarks(keepAnswers=false) {
     if (!keepAnswers) el.classList.remove("correct", "wrong");
   });
 }
-function getPool() {
+function getBasePool() {
   let entries = Object.entries(PREFS);
   const selected = document.getElementById("region").value;
   if (mode === "weak") entries = entries.filter(([code]) => weak.has(code));
   else if (selected !== "全国") entries = entries.filter(([code, data]) => data[1] === selected);
   return entries.map(([code]) => code);
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i=a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function startChallenge(size) {
+  if (!mapReady) {
+    message.textContent = "地図を読み込み中です。少し待ってください。";
+    return;
+  }
+  mode = size === 47 ? "challenge47" : "challenge10";
+  challengeActive = true;
+  challengeSize = size;
+  challengeAnswered = 0;
+  challengeCorrect = 0;
+  used = new Set();
+  clearMarks();
+  resultPanel.classList.remove("show");
+  let base = getBasePool();
+  if (size === 47) base = Object.keys(PREFS);
+  challengePool = shuffle(base).slice(0, Math.min(size, base.length));
+  challengeSize = challengePool.length;
+  updateProgress();
+  pickQuestion();
 }
 function pickQuestion() {
   if (!mapReady) {
@@ -182,19 +290,31 @@ function pickQuestion() {
   }
   resultPanel.classList.remove("show");
   clearMarks(true);
-  const pool = getPool();
-  if (!pool.length) {
-    currentCode = null;
-    question.textContent = mode === "weak" ? "苦手県はまだありません" : "問題がありません";
-    message.textContent = mode === "weak" ? "間違えた県がここにたまります。" : "";
-    return;
+
+  let pool;
+  if (challengeActive) {
+    pool = challengePool.filter(code => !used.has(code));
+    if (!pool.length) {
+      finishChallenge();
+      return;
+    }
+  } else {
+    pool = getBasePool();
+    if (!pool.length) {
+      currentCode = null;
+      question.textContent = mode === "weak" ? "苦手県はまだありません" : "問題がありません";
+      message.textContent = mode === "weak" ? "間違えた県がここにたまります。" : "";
+      return;
+    }
+    let remaining = pool.filter(code => !used.has(code));
+    if (!remaining.length) {
+      used = new Set();
+      remaining = pool;
+    }
+    pool = remaining;
   }
-  let remaining = pool.filter(code => !used.has(code));
-  if (!remaining.length) {
-    used = new Set();
-    remaining = pool;
-  }
-  currentCode = remaining[Math.floor(Math.random() * remaining.length)];
+
+  currentCode = pool[Math.floor(Math.random() * pool.length)];
   used.add(currentCode);
   const data = PREFS[currentCode];
   question.textContent = "「" + data[0] + "」はどこ？";
@@ -227,14 +347,20 @@ function answer(code, el) {
     return;
   }
   total += 1;
+  if (challengeActive) challengeAnswered += 1;
+
   const isCorrect = code === currentCode;
   if (isCorrect) {
     correct += 1;
+    if (challengeActive) challengeCorrect += 1;
+    streak += 1;
+    if (streak > bestStreak) bestStreak = streak;
     weak.delete(code);
     el.classList.add("correct");
-    message.textContent = "○ 正解！";
+    message.textContent = "○ 正解！ 連続正解 " + streak + "！";
     message.className = "okText";
   } else {
+    streak = 0;
     weak.add(currentCode);
     el.classList.add("wrong");
     const answerEl = document.querySelector('.geolonia-svg-map .prefecture[data-code="' + Number(currentCode) + '"]');
@@ -244,7 +370,53 @@ function answer(code, el) {
   }
   save();
   updateStats();
+  updateProgress();
   showResult(isCorrect, code);
+  if (challengeActive && challengeAnswered >= challengeSize) {
+    setTimeout(finishChallenge, 850);
+  }
+}
+function finishChallenge() {
+  if (!challengeActive) return;
+  const scoreText = challengeCorrect + " / " + challengeSize;
+  const pct = Math.round(challengeCorrect / challengeSize * 100);
+  if (challengeSize === 10) {
+    const prev = best10 ? Number(best10.split("/")[0]) : -1;
+    if (challengeCorrect > prev) best10 = scoreText;
+  }
+  if (challengeSize === 47) {
+    const prev = best47 ? Number(best47.split("/")[0]) : -1;
+    if (challengeCorrect > prev) best47 = scoreText;
+  }
+  save();
+  updateStats();
+  document.getElementById("finishTitle").textContent =
+    challengeSize === 47 ? "👑 47県制覇チャレンジ終了！" : "🏅 10問チャレンジ終了！";
+  document.getElementById("finishScore").textContent = scoreText;
+  let text = pct === 100 ? "満点！すごい！" : pct >= 80 ? "かなり良い感じ！" : pct >= 60 ? "あと少し！" : "苦手県を復習しよう！";
+  document.getElementById("finishText").textContent = text + "（正答率 " + pct + "%）";
+  const badges = [];
+  if (pct === 100) badges.push("🏆 パーフェクト");
+  if (challengeSize === 47 && pct >= 80) badges.push("🗾 全国マスター");
+  if (streak >= 10) badges.push("🔥 連続正解 " + streak);
+  document.getElementById("finishBadges").innerHTML = badges.map(b => '<span class="badge">'+b+'</span>').join("");
+  document.getElementById("finishModal").classList.add("show");
+  confetti();
+  challengeActive = false;
+  updateProgress();
+}
+function confetti() {
+  const colors = ["#08a6a0","#86efac","#facc15","#fb7185","#60a5fa"];
+  for (let i=0; i<70; i++) {
+    const d = document.createElement("div");
+    d.className = "confetti";
+    d.style.left = Math.random()*100 + "vw";
+    d.style.background = colors[Math.floor(Math.random()*colors.length)];
+    d.style.animationDelay = Math.random()*0.4 + "s";
+    d.style.transform = "rotate(" + Math.random()*360 + "deg)";
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 2300);
+  }
 }
 async function loadMap() {
   try {
@@ -279,29 +451,37 @@ Object.entries(PREFS).forEach(([code, data]) => {
   document.getElementById("prefList").appendChild(chip);
 });
 document.getElementById("startBtn").addEventListener("click", () => {
-  mode = "quiz"; used = new Set(); message.className = ""; clearMarks(); pickQuestion();
+  mode = "quiz"; challengeActive = false; used = new Set(); message.className = ""; clearMarks(); updateProgress(); pickQuestion();
 });
+document.getElementById("tenBtn").addEventListener("click", () => startChallenge(10));
+document.getElementById("allBtn").addEventListener("click", () => startChallenge(47));
 document.getElementById("learnBtn").addEventListener("click", () => {
-  mode = "learn"; currentCode = null; resultPanel.classList.remove("show"); clearMarks();
+  mode = "learn"; challengeActive = false; currentCode = null; resultPanel.classList.remove("show"); clearMarks(); updateProgress();
   question.textContent = "地図の県をクリックして確認";
   message.textContent = "学習モードです。県そのものをクリックしてね。";
   message.className = "";
 });
 document.getElementById("weakBtn").addEventListener("click", () => {
-  mode = "weak"; used = new Set(); message.className = ""; clearMarks(); pickQuestion();
+  mode = "weak"; challengeActive = false; used = new Set(); message.className = ""; clearMarks(); updateProgress(); pickQuestion();
 });
 document.getElementById("nextBtn").addEventListener("click", pickQuestion);
 document.getElementById("region").addEventListener("change", () => {
-  if (mode !== "learn") { mode = "quiz"; used = new Set(); message.className = ""; clearMarks(); pickQuestion(); }
+  if (mode !== "learn") { mode = "quiz"; challengeActive = false; used = new Set(); message.className = ""; clearMarks(); updateProgress(); pickQuestion(); }
 });
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (confirm("記録を消しますか？")) {
-    correct = 0; total = 0; weak = new Set(); used = new Set();
-    save(); updateStats(); clearMarks(); resultPanel.classList.remove("show");
+    correct = 0; total = 0; weak = new Set(); used = new Set(); streak = 0; bestStreak = 0; best10 = ""; best47 = ""; challengeActive = false;
+    localStorage.removeItem("tdfk4_best10"); localStorage.removeItem("tdfk4_best47");
+    save(); updateStats(); updateProgress(); clearMarks(); resultPanel.classList.remove("show");
     question.textContent = "記録をリセットしました"; message.textContent = ""; message.className = "";
   }
 });
+document.getElementById("closeFinish").addEventListener("click", () => {
+  document.getElementById("finishModal").classList.remove("show");
+  resultPanel.classList.remove("show");
+});
 updateStats();
+updateProgress();
 loadMap();
 </script>
 </body>
