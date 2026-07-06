@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>日本地理マスター Ver.9.1</title>
+<title>日本地理マスター Ver.9.2</title>
 <style>
 :root {
   --main:#08a6a0; --main2:#6ed2cf; --bg:#eefafa; --card:#ffffff;
@@ -290,8 +290,8 @@ button.pulse {
     margin-bottom:3px;
   }
   .resultPanel .big {
-    font-size:24px;
-    margin:3px 0;
+    font-size:22px;
+    margin:2px 0;
   }
   #resultInfo {
     font-size:13px;
@@ -359,10 +359,65 @@ button.pulse {
   }
 }
 
+
+.mobileConfirm {
+  display:none;
+  position:fixed;
+  left:8px;
+  right:8px;
+  bottom:8px;
+  z-index:42;
+  background:white;
+  border:1px solid #d9eeee;
+  box-shadow:0 8px 28px rgba(0,0,0,.18);
+  border-radius:16px;
+  padding:10px;
+  text-align:center;
+}
+.mobileConfirm.show {
+  display:block;
+}
+.mobileConfirm .selectedName {
+  font-size:20px;
+  font-weight:900;
+  margin:4px 0 8px;
+}
+.mobileConfirm .row {
+  display:flex;
+  gap:8px;
+  justify-content:center;
+}
+.mobileConfirm button {
+  min-width:120px;
+}
+.geolonia-svg-map .prefecture.pending {
+  fill:#fef3c7 !important;
+  stroke:#a16207 !important;
+  stroke-width:1.6 !important;
+}
+@media(max-width:850px) {
+  #map {
+    height:calc(100vh - 305px);
+    min-height:330px;
+    max-height:none;
+    overflow:auto;
+    justify-content:flex-start;
+    align-items:flex-start;
+  }
+  #map svg {
+    min-width:720px;
+    width:720px;
+    max-height:none;
+  }
+  .resultPanel {
+    bottom:8px;
+  }
+}
+
 </style>
 </head>
 <body>
-<header><h1>👑 日本地理マスター Ver.9.1.1</h1></header>
+<header><h1>👑 日本地理マスター Ver.9.2.1</h1></header>
 <main>
   <section class="card topGrid">
     <div>
@@ -384,7 +439,7 @@ button.pulse {
         <button class="soft" id="soundBtn">🔊 音ON</button>
       </div>
       <div id="question">「クイズ」を押してね</div>
-      <div id="message">Ver.9.1：スマホ・タブレット表示を調整。</div>
+      <div id="message">Ver.9.2：スマホ誤タップ防止を追加。</div>
       <div class="progressWrap">
         <div class="progressText" id="progressText">進み具合：未開始</div>
         <div class="progressBar"><div id="progressFill"></div></div>
@@ -423,6 +478,15 @@ button.pulse {
       <div id="resultInfo">四国／県庁所在地：松山市</div>
       <div id="graduateText" class="small"></div>
       <button class="primary" id="nextBtn" style="margin-top:14px;">次の問題へ</button>
+    </div>
+
+    <div class="mobileConfirm" id="mobileConfirm">
+      <div class="small">選択中</div>
+      <div class="selectedName" id="selectedName">---</div>
+      <div class="row">
+        <button class="primary" id="confirmAnswerBtn">これで回答</button>
+        <button class="soft" id="cancelAnswerBtn">選び直す</button>
+      </div>
     </div>
   </section>
 
@@ -472,6 +536,7 @@ let best47 = localStorage.getItem("tdfk5_best47") || "";
 let bestTime = localStorage.getItem("tdfk5_bestTime") || "";
 let medals = new Set(JSON.parse(localStorage.getItem("tdfk5_medals") || "[]"));
 let mapReady = false;
+let pendingAnswer = null;
 let soundOn = localStorage.getItem("tdfk6_sound") !== "off";
 
 let challengeActive = false;
@@ -686,6 +751,7 @@ function pickQuestion() {
     return;
   }
   resultPanel.classList.remove("show");
+  clearPendingAnswer();
   clearMarks(true);
 
   let pool;
@@ -814,7 +880,32 @@ function showRegionResult() {
   resultPanel.classList.add("show");
 }
 
+
+function isTouchLayout() {
+  return window.matchMedia("(max-width:850px)").matches;
+}
+function clearPendingAnswer() {
+  pendingAnswer = null;
+  document.querySelectorAll(".geolonia-svg-map .prefecture.pending").forEach(el => el.classList.remove("pending"));
+  const panel = document.getElementById("mobileConfirm");
+  if (panel) panel.classList.remove("show");
+}
+function showPendingAnswer(code, el) {
+  clearPendingAnswer();
+  pendingAnswer = { code, el };
+  el.classList.add("pending");
+  document.getElementById("selectedName").textContent = PREFS[code][0];
+  document.getElementById("mobileConfirm").classList.add("show");
+}
+function shouldUseConfirmTap() {
+  return isTouchLayout() && mode !== "learn" && quizType !== "region";
+}
+
 function answer(code, el) {
+  if (shouldUseConfirmTap()) {
+    showPendingAnswer(code, el);
+    return;
+  }
   if (quizType === "region" && mode !== "learn") {
     answerRegion(code, el);
     return;
@@ -1083,6 +1174,88 @@ document.getElementById("closeFinish").addEventListener("click", () => {
   resultPanel.classList.remove("show");
   renderList();
 });
+
+document.getElementById("confirmAnswerBtn").addEventListener("click", () => {
+  if (!pendingAnswer) return;
+  const saved = pendingAnswer;
+  pendingAnswer = null;
+  document.getElementById("mobileConfirm").classList.remove("show");
+  saved.el.classList.remove("pending");
+  // Temporarily bypass mobile confirmation and perform the real answer.
+  const oldShould = shouldUseConfirmTap;
+  window.__confirmingAnswer = true;
+  realAnswerFromConfirm(saved.code, saved.el);
+  window.__confirmingAnswer = false;
+});
+document.getElementById("cancelAnswerBtn").addEventListener("click", clearPendingAnswer);
+
+function realAnswerFromConfirm(code, el) {
+  // Same logic as a non-mobile click: call internal answer path by disabling confirm condition.
+  if (quizType === "region" && mode !== "learn") {
+    answerRegion(code, el);
+    return;
+  }
+  if (mode === "learn") {
+    resultPanel.classList.remove("show");
+    clearMarks();
+    el.classList.add("learn");
+    const data = PREFS[code];
+    question.textContent = data[0] + "（" + data[3] + "）";
+    message.textContent = data[1] + "／県庁所在地：" + data[2];
+    message.className = "";
+    return;
+  }
+  if (!currentCode) {
+    question.textContent = "先にクイズを始めてね";
+    return;
+  }
+  total += 1;
+  if (challengeActive) challengeAnswered += 1;
+
+  const isCorrect = code === currentCode;
+  let graduateMsg = "";
+  if (isCorrect) {
+    correct += 1;
+    if (challengeActive) challengeCorrect += 1;
+    streak += 1;
+    if (streak > bestStreak) bestStreak = streak;
+    if (weak.has(code)) {
+      weakWins[code] = (weakWins[code] || 0) + 1;
+      if (weakWins[code] >= 3) {
+        weak.delete(code);
+        weakWins[code] = 0;
+        graduateMsg = "🎓 苦手県から卒業！";
+      } else {
+        graduateMsg = "苦手卒業まであと " + (3 - weakWins[code]) + " 回正解";
+      }
+    }
+    el.classList.add("correct");
+    animateEl(el, "pop");
+    beep("ok");
+    message.textContent = "○ 正解！ 連続正解 " + streak + "！";
+    message.className = "okText";
+  } else {
+    streak = 0;
+    weak.add(currentCode);
+    weakWins[currentCode] = 0;
+    el.classList.add("wrong");
+    animateEl(el, "shake");
+    beep("ng");
+    const answerEl = document.querySelector('.geolonia-svg-map .prefecture[data-code="' + Number(currentCode) + '"]');
+    if (answerEl) { answerEl.classList.add("correct"); animateEl(answerEl, "pop"); }
+    message.textContent = "× ここは「" + PREFS[code][0] + "」。正解は「" + PREFS[currentCode][0] + "」";
+    message.className = "ngText";
+  }
+  save();
+  updateStats();
+  updateProgress();
+  showResult(isCorrect, code, graduateMsg);
+  if (challengeActive && challengeAnswered >= challengeSize) {
+    setTimeout(finishChallenge, 850);
+  }
+}
+
+
 document.getElementById("toggleListBtn").addEventListener("click", () => {
   const box = document.getElementById("answerListBox");
   const btn = document.getElementById("toggleListBtn");
