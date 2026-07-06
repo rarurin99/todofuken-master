@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>都道府県マスター Ver.6</title>
+<title>都道府県マスター Ver.6.1</title>
 <style>
 :root {
   --main:#08a6a0; --main2:#6ed2cf; --bg:#eefafa; --card:#ffffff;
@@ -61,7 +61,7 @@ select { background:white; border:1px solid #d0e4e5; min-width:150px; }
   fill:#ffffff; stroke:#53676b; stroke-width:.8; cursor:pointer;
   transition:fill .15s ease, filter .15s ease;
 }
-.geolonia-svg-map .prefecture:hover { fill:#bff1ee; filter:drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
+.geolonia-svg-map .prefecture:hover { filter:drop-shadow(0 1px 2px rgba(0,0,0,.18)); }
 .geolonia-svg-map .prefecture.correct { fill:#86efac !important; }
 .geolonia-svg-map .prefecture.wrong { fill:#fca5a5 !important; }
 .geolonia-svg-map .prefecture.learn { fill:#fef3c7 !important; }
@@ -150,7 +150,7 @@ button.pulse {
 </style>
 </head>
 <body>
-<header><h1>👑 都道府県マスター Ver.6</h1></header>
+<header><h1>👑 都道府県マスター Ver.6.1.1</h1></header>
 <main>
   <section class="card topGrid">
     <div>
@@ -169,7 +169,7 @@ button.pulse {
         <button class="soft" id="soundBtn">🔊 音ON</button>
       </div>
       <div id="question">「クイズ」を押してね</div>
-      <div id="message">Ver.6：アニメーションと効果音を追加。</div>
+      <div id="message">Ver.6.1：マウスオーバーの県名表示を廃止。</div>
       <div class="progressWrap">
         <div class="progressText" id="progressText">進み具合：未開始</div>
         <div class="progressBar"><div id="progressFill"></div></div>
@@ -260,6 +260,23 @@ const question = document.getElementById("question");
 const message = document.getElementById("message");
 const resultPanel = document.getElementById("resultPanel");
 
+
+
+function disableSvgTooltips() {
+  const svgRoot = document.querySelector(".geolonia-svg-map");
+  if (!svgRoot) return;
+
+  svgRoot.querySelectorAll("title").forEach(el => el.remove());
+
+  svgRoot.querySelectorAll("[title]").forEach(el => el.removeAttribute("title"));
+
+  // Some browsers/extensions show labels from aria-label or data-name on hover.
+  // Keep aria-label only for accessibility after click handling setup, but remove generic SVG title sources.
+  svgRoot.querySelectorAll(".prefecture").forEach(el => {
+    el.removeAttribute("data-name");
+    el.removeAttribute("data-name-en");
+  });
+}
 
 function setSoundButton() {
   const btn = document.getElementById("soundBtn");
@@ -617,6 +634,7 @@ async function loadMap() {
     if (!res.ok) throw new Error("map fetch failed");
     const svg = await res.text();
     document.getElementById("map").innerHTML = svg;
+    disableSvgTooltips();
     allPrefEls().forEach(el => {
       const code = codeOf(el);
       if (!PREFS[code]) return;
@@ -631,6 +649,7 @@ async function loadMap() {
         }
       });
     });
+    disableSvgTooltips();
     mapReady = true;
     message.textContent = "準備できました。県の形をクリックできます。";
   } catch (e) {
