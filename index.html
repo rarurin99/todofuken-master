@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>日本地理マスター Ver.9.7</title>
+<title>日本地理マスター Ver.9.8</title>
 <style>
 :root {
   --main:#08a6a0; --main2:#6ed2cf; --bg:#eefafa; --card:#ffffff;
@@ -616,14 +616,14 @@ button.pulse {
 </style>
 </head>
 <body>
-<header><h1>👑 日本地理マスター Ver.9.7.1</h1></header>
+<header><h1>👑 日本地理マスター Ver.9.8.1</h1></header>
 <main>
   <section class="card topGrid">
     <div>
       <div class="controls">
         <button class="primary" id="prefModeBtn">🗾 都道府県</button>
         <button class="soft" id="capitalModeBtn">🏙 県庁所在地</button>
-        <button class="soft" id="hardCapitalBtn">🔥 難しい問題だけ OFF</button>
+        <button class="soft" id="hardCapitalBtn">🔥 暗記問題のみ OFF</button>
         <button class="soft" id="regionModeBtn">🧭 地方区分</button>
         <select id="region">
           <option>全国</option><option>北海道</option><option>東北</option><option>関東</option>
@@ -640,7 +640,7 @@ button.pulse {
         <button class="soft" id="bgmBtn">🎵 BGM OFF</button>
       </div>
       <div id="question">「クイズ」を押してね</div>
-      <div id="message">Ver.9.7：県庁所在地モードに難問スイッチを追加。</div>
+      <div id="message">Ver.9.8：県庁所在地の暗記問題モードを修正。</div>
       <div class="progressWrap">
         <div class="progressText" id="progressText">進み具合：未開始</div>
         <div class="progressBar"><div id="progressFill"></div></div>
@@ -971,15 +971,20 @@ function startChallenge(size, timed=false) {
   pickQuestion();
 }
 
+
 function normalizeCapitalName(name) {
-  return name.replace(/[都道府県市区町村]/g, "");
+  return String(name || "")
+    .replace(/東京都|北海道|大阪府|京都府/g, "")
+    .replace(/[都道府県市区町村]/g, "")
+    .trim();
 }
 function isSameNameCapital(code) {
   const data = PREFS[code];
+  if (!data) return false;
   return normalizeCapitalName(data[0]) === normalizeCapitalName(data[2]);
 }
 function getQuestionPool() {
-  let pool = filterCodes();
+  let pool = getQuestionPool();
   if (quizType === "capital" && hardCapitalOnly) {
     pool = pool.filter(code => !isSameNameCapital(code));
   }
@@ -988,7 +993,7 @@ function getQuestionPool() {
 function setHardCapitalButton() {
   const btn = document.getElementById("hardCapitalBtn");
   if (!btn) return;
-  btn.textContent = hardCapitalOnly ? "🔥 難しい問題だけ ON" : "🔥 難しい問題だけ OFF";
+  btn.textContent = hardCapitalOnly ? "🔥 暗記問題のみ ON" : "🔥 暗記問題のみ OFF";
   btn.style.display = quizType === "capital" ? "inline-flex" : "none";
 }
 
@@ -1041,7 +1046,7 @@ function pickQuestion() {
   const data = PREFS[currentCode];
   if (quizType === "capital") {
     question.textContent = "「" + data[2] + "」が県庁所在地なのはどこ？";
-    message.textContent = "ヒント：地方は「" + data[1] + "」" + (hardCapitalOnly ? "／難しい問題だけ" : "");
+    message.textContent = "ヒント：地方は「" + data[1] + "」" + (hardCapitalOnly ? "／暗記問題のみ" : "");
   } else {
     question.textContent = "「" + data[0] + "」はどこ？";
     message.textContent = "ヒント：地方は「" + data[1] + "」／県庁所在地：" + data[2];
@@ -1355,6 +1360,7 @@ function setQuizType(type) {
     btn.classList.toggle("primary", type === val);
     btn.classList.toggle("soft", type !== val);
   });
+  setHardCapitalButton();
   setHardCapitalButton();
   renderList();
   const box = document.getElementById("answerListBox");
