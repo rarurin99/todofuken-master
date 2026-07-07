@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>日本地理マスター Ver.9.3</title>
+<title>日本地理マスター Ver.9.4</title>
 <style>
 :root {
   --main:#08a6a0; --main2:#6ed2cf; --bg:#eefafa; --card:#ffffff;
@@ -414,10 +414,201 @@ button.pulse {
   }
 }
 
+
+/* Ver9.4: tablet touch optimization */
+@media(min-width:851px) and (max-width:1180px) {
+  header {
+    padding:7px 12px;
+  }
+  h1 {
+    font-size:20px;
+  }
+  main {
+    padding:6px;
+  }
+  .card {
+    border-radius:14px;
+    padding:8px;
+    margin-bottom:6px;
+  }
+  .topGrid {
+    grid-template-columns:1fr .72fr;
+    gap:8px;
+  }
+  .controls {
+    gap:5px;
+  }
+  button, select {
+    min-height:34px;
+    padding:5px 9px;
+    font-size:13px;
+    border-radius:10px;
+  }
+  #question {
+    margin:5px 0 2px;
+    font-size:23px;
+    line-height:1.15;
+  }
+  #message {
+    min-height:22px;
+    font-size:14px;
+    line-height:1.2;
+  }
+  .progressWrap {
+    margin-top:3px;
+  }
+  .progressText {
+    font-size:11px;
+    margin-bottom:2px;
+  }
+  .progressBar {
+    height:7px;
+  }
+  .medalRow {
+    display:none;
+  }
+  .stats {
+    grid-template-columns:repeat(4,1fr);
+    gap:5px;
+    margin-top:2px;
+  }
+  .stat {
+    padding:4px 3px;
+    border-radius:10px;
+  }
+  .stat b {
+    font-size:17px;
+  }
+  .stat span {
+    font-size:10px;
+  }
+  .topGrid > div:nth-child(2) p.small {
+    display:none;
+  }
+  .legend {
+    margin-bottom:3px;
+    font-size:12px;
+    gap:8px;
+  }
+  #map {
+    min-height:0;
+    height:calc(100vh - 215px);
+    max-height:none;
+    overflow:auto;
+    justify-content:flex-start;
+    align-items:flex-start;
+    padding:4px;
+  }
+  #map svg {
+    width:950px;
+    min-width:950px;
+    max-height:none;
+  }
+  .resultPanel {
+    position:fixed;
+    left:10px;
+    right:10px;
+    bottom:8px;
+    width:auto;
+    margin:0;
+    z-index:45;
+    padding:8px 10px;
+    border-radius:16px;
+  }
+  .resultPanel h2 {
+    font-size:20px;
+    margin:0 0 2px;
+  }
+  .resultPanel .big {
+    font-size:26px;
+    margin:1px 0;
+  }
+  #resultInfo {
+    font-size:13px;
+  }
+  #nextBtn {
+    min-height:34px !important;
+    margin-top:6px !important;
+  }
+  .mobileConfirm {
+    left:10px;
+    right:10px;
+    bottom:8px;
+    padding:8px 10px;
+  }
+  .mobileConfirm .selectedName {
+    font-size:20px;
+    margin:2px 0 6px;
+  }
+  main > section.card:last-child {
+    display:none;
+  }
+}
+
+/* Landscape tablets often have short height */
+@media(min-width:851px) and (max-width:1180px) and (orientation:landscape) {
+  header {
+    padding:5px 10px;
+  }
+  .card {
+    padding:6px;
+    margin-bottom:5px;
+  }
+  #question {
+    font-size:21px;
+    margin:3px 0 1px;
+  }
+  #message {
+    font-size:13px;
+    min-height:18px;
+  }
+  .stats {
+    grid-template-columns:repeat(4,1fr);
+  }
+  .stat {
+    padding:3px 2px;
+  }
+  .stat b {
+    font-size:15px;
+  }
+  .stat span {
+    font-size:9px;
+  }
+  #map {
+    height:calc(100vh - 175px);
+  }
+  #map svg {
+    width:1000px;
+    min-width:1000px;
+  }
+  .resultPanel {
+    display:block;
+    left:auto;
+    right:8px;
+    bottom:8px;
+    width:330px;
+    max-width:42vw;
+    padding:8px;
+  }
+  .resultPanel .big {
+    font-size:22px;
+  }
+  .mobileConfirm {
+    left:auto;
+    right:8px;
+    bottom:8px;
+    width:330px;
+    max-width:42vw;
+  }
+  .mobileConfirm button {
+    min-width:110px;
+  }
+}
+
 </style>
 </head>
 <body>
-<header><h1>👑 日本地理マスター Ver.9.3.1</h1></header>
+<header><h1>👑 日本地理マスター Ver.9.4.1</h1></header>
 <main>
   <section class="card topGrid">
     <div>
@@ -439,7 +630,7 @@ button.pulse {
         <button class="soft" id="soundBtn">🔊 音ON</button>
       </div>
       <div id="question">「クイズ」を押してね</div>
-      <div id="message">Ver.9.3：仮選択時の県名表示を非表示。</div>
+      <div id="message">Ver.9.4：タブレット表示を調整。</div>
       <div class="progressWrap">
         <div class="progressText" id="progressText">進み具合：未開始</div>
         <div class="progressBar"><div id="progressFill"></div></div>
@@ -882,7 +1073,7 @@ function showRegionResult() {
 
 
 function isTouchLayout() {
-  return window.matchMedia("(max-width:850px)").matches;
+  return window.matchMedia("(max-width:1180px)").matches;
 }
 function clearPendingAnswer() {
   pendingAnswer = null;
