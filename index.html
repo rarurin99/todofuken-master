@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>日本地理マスター Ver.9.8</title>
+<title>日本地理マスター Ver.9.9</title>
 <style>
 :root {
   --main:#08a6a0; --main2:#6ed2cf; --bg:#eefafa; --card:#ffffff;
@@ -616,7 +616,7 @@ button.pulse {
 </style>
 </head>
 <body>
-<header><h1>👑 日本地理マスター Ver.9.8.1</h1></header>
+<header><h1>👑 日本地理マスター Ver.9.9.1</h1></header>
 <main>
   <section class="card topGrid">
     <div>
@@ -640,7 +640,7 @@ button.pulse {
         <button class="soft" id="bgmBtn">🎵 BGM OFF</button>
       </div>
       <div id="question">「クイズ」を押してね</div>
-      <div id="message">Ver.9.8：県庁所在地の暗記問題モードを修正。</div>
+      <div id="message">Ver.9.9：暗記問題のみ除外処理を再修正。</div>
       <div class="progressWrap">
         <div class="progressText" id="progressText">進み具合：未開始</div>
         <div class="progressBar"><div id="progressFill"></div></div>
@@ -972,16 +972,13 @@ function startChallenge(size, timed=false) {
 }
 
 
-function normalizeCapitalName(name) {
-  return String(name || "")
-    .replace(/東京都|北海道|大阪府|京都府/g, "")
-    .replace(/[都道府県市区町村]/g, "")
-    .trim();
-}
+
+const SAME_NAME_CAPITAL_CODES = new Set([
+  "05","06","07","08","10","11","12","13","16","18","20","21","22","24","26","29","30","31","32","33","34","35","36","39","40","41","44","45","46","47"
+]);
+
 function isSameNameCapital(code) {
-  const data = PREFS[code];
-  if (!data) return false;
-  return normalizeCapitalName(data[0]) === normalizeCapitalName(data[2]);
+  return SAME_NAME_CAPITAL_CODES.has(String(code).padStart(2, "0"));
 }
 function getQuestionPool() {
   let pool = getQuestionPool();
@@ -1360,6 +1357,7 @@ function setQuizType(type) {
     btn.classList.toggle("primary", type === val);
     btn.classList.toggle("soft", type !== val);
   });
+  setHardCapitalButton();
   setHardCapitalButton();
   setHardCapitalButton();
   renderList();
